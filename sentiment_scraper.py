@@ -16,10 +16,13 @@ from threading import Timer
 import csv
 import time
 from selenium import webdriver
+from sentimentizer import sentimentize
 from twilio.rest import Client
 import smtplib
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException
+import os
+from sentimentizer import sentimentize
 
 chrome_options = Options()
 chrome_options.headless = False
@@ -31,9 +34,7 @@ chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
 chrome_options.add_experimental_option('useAutomationExtension', False)
 chrome_options.add_argument("window-size=1280,800")
 chrome_options.add_argument("—disable-gpu")
-chrome_options.add_argument(
-    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36")
-driver = webdriver.Chrome(executable_path="C:/Users/david/PycharmProjects/WebsiteBot/chromedriver.exe",
+driver = webdriver.Chrome(os.path.join(os.getcwd(), 'chromedriver'),
                           options=chrome_options)
 # driver = webdriver.manage().Timeouts().ImplicitWait
 
@@ -78,6 +79,11 @@ while True:
         curr_headline = driver.find_element_by_class_name("tab-link-news")
         if curr_headline.text != prev_headline[i]:
             print(str(curr_headline.text))
+            # Goes through the transformer and prints out sentiment plus confidence
+            sentiment_result = sentimentize(str(curr_headline.text))
+            print("Label:", sentiment_result['label'])
+            print("Confidence Score:", sentiment_result['score'])
+            print()
             prev_headline[i] = curr_headline.text
 
 driver.close()
