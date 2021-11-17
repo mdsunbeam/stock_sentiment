@@ -23,6 +23,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException
 import os
 from sentimentizer import sentimentize
+import matplotlib.pyplot as plt
+import numpy as np
 
 chrome_options = Options()
 chrome_options.headless = False
@@ -38,12 +40,15 @@ driver = webdriver.Chrome(os.path.join(os.getcwd(), 'chromedriver'),
                           options=chrome_options)
 # driver = webdriver.manage().Timeouts().ImplicitWait
 
-ticker_array = ["AAPL", "TSLA", "HUT"]
-
+# ticker_array = ["AAPL", "TSLA", "HUT"]
+ticker_array = ["TSLA"]
 # Initialization - getting first n headlines
 driver.get("https://finviz.com/")
 first_n = 10
 timeout = 5
+pos_count = 0
+neg_count = 0
+
 for i in range(len(ticker_array)):
     element = driver.find_element_by_xpath("//*[@id='search']/div/form/input")
     element.send_keys(ticker_array[i])
@@ -56,35 +61,48 @@ for i in range(len(ticker_array)):
 
     headlines = driver.find_elements_by_class_name("tab-link-news")
 
+
     # Gets n most recent headlines
     with open(ticker_array[i] + '.csv', 'w', ) as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['Headline'])
         for j in range(first_n):
             writer.writerow([str(headlines[j].text)])
+            print(str(headlines[j].text))
+            sentiment_result = sentimentize(str(headlines[j].text))
+            if(sentiment_result['label'] == "POSITIVE"):
+                pos_count += 1
+            elif(sentiment_result['label'] == "NEGATIVE"):
+                neg_count += 1
 
+sentiment_count = np.array([pos_count, neg_count])
+labels = ["Positive", "Negative"]
+
+plt.pie(sentiment_count, labels=labels)
+plt.title("TSLA Stock Sentiment Right Now")
+plt.show()
 # Refresh page and get most recent headline
-prev_headline = [''] * len(ticker_array)
-wait_time = .5
-while True:
-    for i in range(len(ticker_array)):
-        element = driver.find_element_by_xpath("//*[@id='search']/div/form/input")
-        element.send_keys(ticker_array[i])
-        element.send_keys(Keys.RETURN)
+# prev_headline = [''] * len(ticker_array)
+# wait_time = .5
+# while True:
+#     for i in range(len(ticker_array)):
+#         element = driver.find_element_by_xpath("//*[@id='search']/div/form/input")
+#         element.send_keys(ticker_array[i])
+#         element.send_keys(Keys.RETURN)
 
-        # Wait for page to load before proceeding
-        element_present = EC.presence_of_element_located((By.CLASS_NAME, 'tab-link-news'))
-        WebDriverWait(driver, timeout).until(element_present)
+#         # Wait for page to load before proceeding
+#         element_present = EC.presence_of_element_located((By.CLASS_NAME, 'tab-link-news'))
+#         WebDriverWait(driver, timeout).until(element_present)
 
-        curr_headline = driver.find_element_by_class_name("tab-link-news")
-        if curr_headline.text != prev_headline[i]:
-            print(str(curr_headline.text))
-            # Goes through the transformer and prints out sentiment plus confidence
-            sentiment_result = sentimentize(str(curr_headline.text))
-            print("Label:", sentiment_result['label'])
-            print("Confidence Score:", sentiment_result['score'])
-            print()
-            prev_headline[i] = curr_headline.text
+#         curr_headline = driver.find_element_by_class_name("tab-link-news")
+#         if curr_headline.text != prev_headline[i]:
+#             print(str(curr_headline.text))
+#             # Goes through the transformer and prints out sentiment plus confidence
+#             sentiment_result = sentimentize(str(curr_headline.text))
+#             print("Label:", sentiment_result['label'])
+#             print("Confidence Score:", sentiment_result['score'])
+#             print()
+#             prev_headline[i] = curr_headline.text
 
-driver.close()
-driver.quit()
+# driver.close()
+# driver.quit()
